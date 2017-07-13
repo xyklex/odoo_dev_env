@@ -1,0 +1,60 @@
+- name: Install development tools 
+  apt: name={{ item }} 
+       state=present
+       update_cache={{ odoo_apt_update_cache }}
+       cache_valid_time={{ odoo_apt_cache_valid_time }}
+  with_items: "{{ development_tools }}"
+  tags: 'dev-tools'
+
+- name: Add Odoo system user
+  user: 
+    name: "{{ odoo_user }}"
+    shell: /bin/bash
+    password: "{{ odoo_user_passwd }}" 
+    update_password: on_create
+    system: "{{ odoo_user_system }}"
+    
+- name: Create log directory
+  file: 
+    path: "{{ odoo_logdir }}" 
+    state: directory
+    owner: "{{ odoo_user }}"
+    group: "{{ odoo_user }}"
+    force: no
+
+- name: Project repository already cloned?
+  stat: 
+    path: "{{ odoo_repo_dest }}"
+  register: project_path
+
+- name: Clone project repository
+  become: yes
+  become_user: "{{ odoo_user }}"
+  git:  repo={{ odoo_repo_url }}
+        dest={{ odoo_repo_dest }}
+        version={{ odoo_repo_rev | string }}
+        update={{ project_path.stat.exists == False and 'yes'
+                  or (odoo_repo_update and 'yes' or 'no') }}
+        depth={{ odoo_repo_depth }}
+  when: odoo_repo_type == 'git' and odoo_repo_url
+  notify: Restart Odoo
+
+- name: Install Odoo
+  include: install_odoo.yml
+  tags:
+      - install_odoo_dependencies
+
+- name: Install NPM packages
+  include: install_npm.yml
+  static: yes
+  when: (odoo_version | int) >= 9
+
+- include: install_wkhtmltox.yml
+  static: yes
+  when: (odoo_version | int) >= 9
+
+- include: service.yml
+  static: yes
+  tags:
+      - odoo
+      - odoo_service

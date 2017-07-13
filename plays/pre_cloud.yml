@@ -1,0 +1,10 @@
+- name: Ensure the dynamic inventory exists
+  blockinfile:
+    dest: "{{ dynamic_inventory_file }}"
+    marker: "# {mark}"
+    create: yes
+    block: |
+      [api-call:children]
+      {% for group in dynamic_inventory_groups %}
+      {{ group }}
+      {% endfor %}

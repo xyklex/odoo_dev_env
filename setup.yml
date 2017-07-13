@@ -1,0 +1,46 @@
+- name: setup cloud development instances
+  hosts: localhost
+  tags: cloud
+  gather_facts: no
+  vars_files:
+    - config.yml
+
+  pre_tasks:
+    - name: pre tasks
+      include: plays/pre_cloud.yml
+      static: yes
+      tags: ['cloud']
+
+  roles:
+    - { role: "digitalocean", tags: ['do'] }
+
+  tasks:
+    - debug: msg=testing
+
+  post_tasks:
+      - name: post tasks
+        include: plays/post_cloud.yml
+        static: yes
+        tags: ['cloud']
+
+- name: setup odoo
+  hosts: digitalocean
+  remote_user: root
+  tags: odoo
+  gather_facts: yes
+  vars_files:
+    - config.yml
+
+  pre_tasks:
+    - name: Ubuntu | Install prerequisites
+      raw: sleep 10 && sudo apt-get update -qq && sudo apt-get install -qq -y python2.7
+    
+    - name: Ubuntu | Configure defaults
+      raw: sudo update-alternatives --install /usr/bin/python python /usr/bin/python2.7 1
+      tags:
+        - update-alternatives
+    
+  roles:
+    - { role: "postgresql", tags: ['install_postgresql'] }
+    - { role: "odoo", tags: ['odoo'] }
+    - { role: "nginx", tags: ['odoo'] }

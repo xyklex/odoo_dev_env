@@ -1,0 +1,21 @@
+- name: Install postgresql server
+  apt: 
+    name: "{{ item }}"
+    state: present
+  with_items:
+      - postgresql
+      - postgresql-contrib
+
+- block: 
+    - name: Odoo postgresql user
+      postgresql_user: 
+        name: "{{ odoo_db_user }}" 
+        role_attr_flags: SUPERUSER 
+        state: present
+   
+    - name: Odoo postgresql user password
+      postgresql_user: 
+        name: "{{ odoo_db_user }}" 
+        password: "{{ odoo_db_password }}"
+  become: yes
+  become_user: postgres

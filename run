@@ -1,0 +1,11 @@
+#!/bin/bash
+
+rsync -avzP \
+      --delete \
+      --exclude={'.git','*.swp'} \
+      -e 'ssh -i /Users/xyklex/Directories/Govat.pro/odoo-dev-env/keys/odoo_dev' \
+      . \
+      root@67.205.132.54:odoo_dev_env
+
+ssh -l root 67.205.132.54 -i keys/odoo_dev -v \ 
+    'pushd odoo_dev_env && ansible-playbook -i inventory --private-key keys/odoo_dev -u root -vv setup.yml'
